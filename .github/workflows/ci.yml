@@ -1,0 +1,76 @@
+# Pipeline CI/CD — Sprint 1 (US 1.1)
+# Déclenchée à chaque push/PR. Étapes : install, lint, test, build, puis
+# build+push de l'image Docker vers Amazon ECR (uniquement sur la branche main).
+name: CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ---- Qualité et tests (par service) ----
+  quality:
+    name: Lint & Tests — IAM
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/iam
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: services/iam/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Générer le client Prisma
+        run: npx prisma generate
+
+      - name: Lint (ESLint + Prettier)
+        run: npm run lint
+
+      - name: Tests unitaires
+        run: npm test
+
+      - name: Analyse qualité (SonarQube)
+        # Intégration SonarQube Community (F-1.1.d) — activée quand le serveur Sonar est configuré.
+        if: ${{ env.SONAR_TOKEN != '' }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: echo "Analyse SonarQube à brancher sur le serveur Sonar de l'équipe."
+
+  # ---- Build & push de l'image vers ECR (main uniquement) ----
+  build-and-push:
+    name: Build & Push ECR — IAM
+    needs: quality
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurer les identifiants AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: eu-west-3
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Se connecter à Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push de l'image IAM
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPOSITORY: ecommerce/iam-service
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -t $REGISTRY/$REPOSITORY:latest services/iam
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY:latest

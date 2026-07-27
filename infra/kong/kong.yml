@@ -1,0 +1,29 @@
+# Configuration déclarative de Kong (mode DB-less) — Sprint 1
+# Route les requêtes /api/v1/* vers les microservices, valide le JWT,
+# applique un rate limiting basique (US 1.2 : F-1.2.a, F-1.2.c, F-1.2.d).
+_format_version: '3.0'
+
+services:
+  # --- Service IAM ---
+  - name: iam-service
+    url: http://host.docker.internal:3001
+    routes:
+      # Routes PUBLIQUES (inscription, login) : pas de JWT requis
+      - name: iam-public
+        paths:
+          - /api/v1/auth
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+
+  # --- Exemple de route PROTÉGÉE (à activer quand un service protégé existera) ---
+  # - name: catalogue-service
+  #   url: http://host.docker.internal:3002
+  #   routes:
+  #     - name: catalogue-protected
+  #       paths: [/api/v1/products]
+  #   plugins:
+  #     - name: jwt   # validation du JWT par Kong (F-2.1.d)

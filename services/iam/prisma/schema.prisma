@@ -1,0 +1,27 @@
+// Schéma Prisma — Service IAM
+// Correspond au diagramme de classes IAM : entité User + énumération Role.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  ADMIN_METIER
+}
+
+model User {
+  id              String   @id @default(uuid())
+  nom             String
+  email           String   @unique
+  motDePasseHache String   @map("mot_de_passe_hache")
+  role            Role     @default(CLIENT)
+  dateCreation    DateTime @default(now()) @map("date_creation")
+  actif           Boolean  @default(true)
+
+  @@map("users")
+}

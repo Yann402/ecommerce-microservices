@@ -1,0 +1,75 @@
+# Environnement local — Sprint 1 (fondations)
+# Lance toutes les dépendances d'infrastructure des microservices.
+# Chaque service applicatif se lance séparément (npm run start:dev).
+
+services:
+  # --- Base relationnelle : IAM et Commandes ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecom-postgres
+    environment:
+      POSTGRES_USER: ecom
+      POSTGRES_PASSWORD: ecom_dev_password
+      POSTGRES_DB: iam
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    command: postgres -c password_encryption=scram-sha-256
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecom -d iam']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Base documents : Catalogue ---
+  mongodb:
+    image: mongo:7
+    container_name: ecom-mongodb
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+
+  # --- Cache en mémoire : Panier ---
+  redis:
+    image: redis:7-alpine
+    container_name: ecom-redis
+    ports:
+      - '6379:6379'
+    command: redis-server --save 60 1 --loglevel warning
+
+  # --- Broker de messages : Saga (Commandes <-> Catalogue) ---
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ecom-rabbitmq
+    ports:
+      - '5672:5672'    # AMQP
+      - '15672:15672'  # console d'administration
+    environment:
+      RABBITMQ_DEFAULT_USER: ecom
+      RABBITMQ_DEFAULT_PASS: ecom_dev_password
+
+  # --- API Gateway : point d'entrée unique (mode déclaratif DB-less) ---
+  kong:
+    image: kong:3.7
+    container_name: ecom-kong
+    environment:
+      KONG_DATABASE: 'off'
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_LISTEN: '0.0.0.0:8000'
+      KONG_ADMIN_LISTEN: '0.0.0.0:8001'
+    ports:
+      - '8000:8000'   # proxy (trafic applicatif /api/v1/*)
+      - '8001:8001'   # admin
+    volumes:
+      - ./kong:/kong
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  mongo_data:
