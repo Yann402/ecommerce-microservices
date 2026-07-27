@@ -16,7 +16,10 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: UsersService, useValue: users },
-        { provide: JwtService, useValue: { signAsync: jest.fn().mockResolvedValue('jwt.token.fake') } },
+        {
+          provide: JwtService,
+          useValue: { signAsync: jest.fn().mockResolvedValue('jwt.token.fake') },
+        },
       ],
     }).compile();
     auth = moduleRef.get(AuthService);
@@ -32,7 +35,13 @@ describe('AuthService', () => {
 
   it('retourne un JWT quand les identifiants sont valides', async () => {
     const hash = await bcrypt.hash('motdepasse123', 10);
-    users.findByEmail.mockResolvedValue({ id: 'u1', email: 'k@test.com', role: 'CLIENT', actif: true, motDePasseHache: hash });
+    users.findByEmail.mockResolvedValue({
+      id: 'u1',
+      email: 'k@test.com',
+      role: 'CLIENT',
+      actif: true,
+      motDePasseHache: hash,
+    });
     const res = await auth.login({ email: 'k@test.com', motDePasse: 'motdepasse123' });
     expect(res.accessToken).toBeDefined();
     expect(res.tokenType).toBe('Bearer');
@@ -40,7 +49,15 @@ describe('AuthService', () => {
 
   it('rejette (401) quand le mot de passe est faux', async () => {
     const hash = await bcrypt.hash('lebon', 10);
-    users.findByEmail.mockResolvedValue({ id: 'u1', email: 'k@test.com', role: 'CLIENT', actif: true, motDePasseHache: hash });
-    await expect(auth.login({ email: 'k@test.com', motDePasse: 'lemauvais' })).rejects.toThrow(UnauthorizedException);
+    users.findByEmail.mockResolvedValue({
+      id: 'u1',
+      email: 'k@test.com',
+      role: 'CLIENT',
+      actif: true,
+      motDePasseHache: hash,
+    });
+    await expect(auth.login({ email: 'k@test.com', motDePasse: 'lemauvais' })).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 });
