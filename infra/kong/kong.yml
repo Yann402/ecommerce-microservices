@@ -1,29 +1,38 @@
-# Configuration déclarative de Kong (mode DB-less) — Sprint 1
-# Route les requêtes /api/v1/* vers les microservices, valide le JWT,
-# applique un rate limiting basique (US 1.2 : F-1.2.a, F-1.2.c, F-1.2.d).
+# Configuration déclarative de Kong (mode DB-less) — Sprint 2
+# Route /api/v1/*, valide le JWT sur les routes protégées, rate limiting.
 _format_version: '3.0'
 
 services:
-  # --- Service IAM ---
+  # ===== Service IAM =====
   - name: iam-service
     url: http://host.docker.internal:3001
     routes:
-      # Routes PUBLIQUES (inscription, login) : pas de JWT requis
-      - name: iam-public
+      # --- Routes PUBLIQUES : inscription et login (aucun JWT requis) ---
+      - name: iam-auth-public
         paths:
           - /api/v1/auth
         strip_path: false
+
+      # --- Routes PROTÉGÉES : profil et administration (JWT obligatoire) ---
+      - name: iam-users-protected
+        paths:
+          - /api/v1/users
+        strip_path: false
+        plugins:
+          - name: jwt   # Kong valide la signature du JWT avant de laisser passer (F-2.1.d)
     plugins:
       - name: rate-limiting
         config:
           minute: 100
           policy: local
 
-  # --- Exemple de route PROTÉGÉE (à activer quand un service protégé existera) ---
-  # - name: catalogue-service
-  #   url: http://host.docker.internal:3002
-  #   routes:
-  #     - name: catalogue-protected
-  #       paths: [/api/v1/products]
-  #   plugins:
-  #     - name: jwt   # validation du JWT par Kong (F-2.1.d)
+# ===== Consumer émetteur des jetons + credential de vérification =====
+# Kong utilise ce credential pour vérifier la signature des JWT.
+# La 'key' correspond au claim 'iss' du jeton ; le 'secret' DOIT être
+# identique au JWT_SECRET du service IAM.
+consumers:
+  - username: iam-issuer
+    jwt_secrets:
+      - key: iam-service            # doit correspondre au claim iss du JWT
+        algorithm: HS256
+        secret: dev_secret_a_remplacer_en_production   # = JWT_SECRET du service IAM

@@ -1,0 +1,377 @@
+{
+  "info": {
+    "name": "IAM Service - E-commerce Microservices",
+    "_postman_id": "iam-ecommerce-smartovate-0001",
+    "description": "Collection de test du service IAM (authentification).\n\nDeux dossiers :\n- **Acces direct (port 3001)** : appelle le service directement.\n- **Via Kong (port 8000)** : appelle le service a travers la passerelle API, ce qui verifie le routage /api/v1/*.\n\nLa requete Login sauvegarde automatiquement le jeton JWT dans la variable `jwt_token`, reutilisable pour les routes protegees des prochains sprints.\n\nVariables modifiables dans l'onglet Variables de la collection (email et mot de passe de test, ports).\n\nSPRINT 2 : ajout des routes protegees. La route /users/me exige un JWT (valide par Kong) ; /users est reservee au role ADMIN_METIER (autorisation par le service).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Acces direct (port 3001)",
+      "item": [
+        {
+          "name": "1. Inscription (register)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Inscription reussie (201 Created)\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Le mot de passe n'est jamais renvoye\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.not.have.property('motDePasse');",
+                  "    pm.expect(body).to.not.have.property('motDePasseHache');",
+                  "});",
+                  "pm.test(\"L'utilisateur a un id et un role\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.id).to.be.a('string');",
+                  "    pm.expect(body.role).to.eql('CLIENT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Karim Benali\",\n  \"email\": \"{{test_email}}\",\n  \"motDePasse\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Connexion (login) - sauvegarde le JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Connexion reussie (200 OK)\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Un jeton JWT est retourne\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.accessToken).to.be.a('string');",
+                  "    pm.expect(body.tokenType).to.eql('Bearer');",
+                  "});",
+                  "// Sauvegarde automatique du JWT pour les futures requetes protegees (Sprint 2)",
+                  "const body = pm.response.json();",
+                  "if (body.accessToken) {",
+                  "    pm.collectionVariables.set('jwt_token', body.accessToken);",
+                  "    console.log('JWT sauvegarde dans la variable jwt_token');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"motDePasse\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Connexion - mauvais mot de passe (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Rejet attendu : mauvais mot de passe (401)\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"motDePasse\": \"mauvais_mot_de_passe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Via Kong (port 8000)",
+      "item": [
+        {
+          "name": "4. Inscription via Kong",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Inscription via Kong (201 ou 409 si deja cree)\", function () {",
+                  "    pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Karim Benali\",\n  \"email\": \"{{test_email}}\",\n  \"motDePasse\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Connexion via Kong - verifie le routage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Connexion via Kong reussie (200 OK)\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Le routage Kong /api/v1/* fonctionne (JWT recu)\", function () {",
+                  "    pm.expect(pm.response.json().accessToken).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"motDePasse\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/auth/login",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Routes protegees (JWT requis, via Kong)",
+      "item": [
+        {
+          "name": "6. Mon profil - GET /users/me (avec JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Acces autorise avec un JWT valide (200)\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Le profil contient l'email, sans le mot de passe\", function () {",
+                  "    const b = pm.response.json();",
+                  "    pm.expect(b.email).to.be.a('string');",
+                  "    pm.expect(b).to.not.have.property('motDePasseHache');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/users/me",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "7. Sans JWT - GET /users/me (401 attendu, Kong bloque)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Kong bloque l'acces sans jeton (401)\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/users/me",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "8. Liste des utilisateurs - GET /users (admin uniquement)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Avec un compte CLIENT, cette route doit renvoyer 403 (role insuffisant).",
+                  "// Avec un compte ADMIN_METIER, elle renvoie 200 et la liste.",
+                  "pm.test(\"Reponse 200 (admin) ou 403 (client) - jamais 401\", function () {",
+                  "    pm.expect([200, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/users",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "test_email",
+      "value": "karim@test.com",
+      "type": "string"
+    },
+    {
+      "key": "test_password",
+      "value": "motdepasse123",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

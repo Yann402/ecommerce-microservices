@@ -38,7 +38,8 @@ export class AuthService {
       throw new UnauthorizedException('Identifiants invalides.');
     }
     // Le JWT porte l'identité et le rôle : Kong le validera ensuite sans rappeler IAM.
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    // Le claim 'iss' (issuer) permet a Kong de retrouver le bon secret de verification.
+    const payload = { sub: user.id, email: user.email, role: user.role, iss: 'iam-service' };
     const accessToken = await this.jwt.signAsync(payload);
     return { accessToken, tokenType: 'Bearer' };
   }
