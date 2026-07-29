@@ -26,6 +26,43 @@ services:
           minute: 100
           policy: local
 
+  # ===== Service Catalogue =====
+  # Subtilité : lecture et écriture partagent les mêmes chemins
+  # (/api/v1/products, /api/v1/categories). On ne peut donc PAS séparer public
+  # et protégé par le chemin (comme pour IAM /auth vs /users) : on sépare par
+  # MÉTHODE HTTP. Les GET passent en clair ; les écritures passent par le
+  # plugin jwt. Le service, lui, vérifie ensuite le rôle ADMIN_METIER.
+  - name: catalogue-service
+    url: http://host.docker.internal:3002
+    routes:
+      # --- Lecture PUBLIQUE : parcourir produits/catégories (GET, sans JWT) ---
+      - name: catalogue-read-public
+        paths:
+          - /api/v1/products
+          - /api/v1/categories
+        methods:
+          - GET
+        strip_path: false
+
+      # --- Écritures ADMIN : POST/PUT/PATCH/DELETE (JWT obligatoire) ---
+      - name: catalogue-write-protected
+        paths:
+          - /api/v1/products
+          - /api/v1/categories
+        methods:
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+        strip_path: false
+        plugins:
+          - name: jwt   # Kong valide la signature avant de laisser passer
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+
 # ===== Consumer émetteur des jetons + credential de vérification =====
 # Kong utilise ce credential pour vérifier la signature des JWT.
 # La 'key' correspond au claim 'iss' du jeton ; le 'secret' DOIT être
