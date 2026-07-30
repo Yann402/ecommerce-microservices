@@ -1,0 +1,47 @@
+# Routes IAM (KIC). strip-path:false -> le chemin /api/v1/... est transmis tel
+# quel au service (qui a le préfixe global api/v1).
+
+# /api/v1/auth : PUBLIC (register/login). Rate-limiting seul, pas de JWT.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: iam-auth-public
+  namespace: applications
+  annotations:
+    konghq.com/plugins: rate-limiting
+    konghq.com/strip-path: "false"
+spec:
+  ingressClassName: kong
+  rules:
+    - http:
+        paths:
+          - path: /api/v1/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: iam
+                port:
+                  number: 3001
+---
+# /api/v1/users : PROTÉGÉ. Kong valide le JWT (plugin jwt) ; le service vérifie
+# ensuite le rôle (défense en profondeur).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: iam-users-protected
+  namespace: applications
+  annotations:
+    konghq.com/plugins: jwt,rate-limiting
+    konghq.com/strip-path: "false"
+spec:
+  ingressClassName: kong
+  rules:
+    - http:
+        paths:
+          - path: /api/v1/users
+            pathType: Prefix
+            backend:
+              service:
+                name: iam
+                port:
+                  number: 3001

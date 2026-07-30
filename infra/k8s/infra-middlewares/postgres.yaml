@@ -1,0 +1,76 @@
+# PostgreSQL — persistance du service IAM.
+# LOCAL UNIQUEMENT : sur EKS, ce StatefulSet est supprimé et IAM pointe vers
+# Amazon RDS via son Secret (seule l'URL de connexion change).
+# Note : dans le cluster, le port est 5432 (le 5433 était un contournement de
+# l'hôte Windows, sans objet ici — chaque pod a son propre espace réseau).
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+  namespace: infra-middlewares
+type: Opaque
+# stringData : valeurs en clair (dev). En production, ces secrets viendraient
+# d'AWS Secrets Manager (ADR-21), jamais committés en clair.
+stringData:
+  POSTGRES_USER: ecom
+  POSTGRES_PASSWORD: ecom_dev_password
+  POSTGRES_DB: iam
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: infra-middlewares
+spec:
+  clusterIP: None
+  selector:
+    app: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: infra-middlewares
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+              # subPath : évite le conflit avec lost+found sur le volume monté.
+              subPath: pgdata
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

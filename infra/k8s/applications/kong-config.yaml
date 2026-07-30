@@ -1,0 +1,48 @@
+# Traduction KIC du consumer + plugins définis dans kong.yml (Sprints 2-3).
+
+# Credential JWT (Secret typé konghq.com/credential: jwt).
+# 'key' = claim 'iss' du jeton ; 'secret' = JWT_SECRET partagé (identique à
+# celui du Secret jwt-secret côté services). En production -> Secrets Manager.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iam-jwt-credential
+  namespace: applications
+  labels:
+    konghq.com/credential: jwt
+type: Opaque
+stringData:
+  key: iam-service
+  algorithm: HS256
+  secret: dev_secret_a_remplacer_en_production
+---
+# Consumer émetteur des jetons.
+apiVersion: configuration.konghq.com/v1
+kind: KongConsumer
+metadata:
+  name: iam-issuer
+  namespace: applications
+  annotations:
+    kubernetes.io/ingress.class: kong
+username: iam-issuer
+credentials:
+  - iam-jwt-credential
+---
+# Plugin jwt : Kong valide la signature à l'entrée (401 si absent/invalide).
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: jwt
+  namespace: applications
+plugin: jwt
+---
+# Plugin rate-limiting : 100 requêtes/minute (policy local).
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: rate-limiting
+  namespace: applications
+config:
+  minute: 100
+  policy: local
+plugin: rate-limiting

@@ -1,0 +1,19 @@
+# Namespaces repris du diagramme d'architecture :
+#  - gateway            : Kong (point d'entrée)
+#  - applications       : microservices IAM et Catalogue
+#  - infra-middlewares  : bases auto-hébergées (MongoDB ; PostgreSQL en LOCAL,
+#                          remplacé par RDS sur EKS)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: applications
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra-middlewares

@@ -1,0 +1,80 @@
+# Service IAM : Deployment + Service (ClusterIP).
+# initContainer : applique le schéma Prisma à PostgreSQL (db push) AVANT que le
+# service démarre, sinon IAM tournerait sur une base sans table `users`.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iam
+  namespace: applications
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iam
+  template:
+    metadata:
+      labels:
+        app: iam
+    spec:
+      initContainers:
+        - name: prisma-db-push
+          image: iam-service:v2
+          imagePullPolicy: IfNotPresent
+          command: ["npx", "prisma", "db", "push", "--skip-generate"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: iam-db
+                  key: DATABASE_URL
+      containers:
+        - name: iam
+          image: iam-service:v2
+          imagePullPolicy: IfNotPresent   # utilise l'image buildée en local
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: iam-config
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: iam-db
+                  key: DATABASE_URL
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iam
+  namespace: applications
+spec:
+  selector:
+    app: iam
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3001

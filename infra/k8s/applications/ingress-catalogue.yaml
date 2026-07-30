@@ -1,0 +1,62 @@
+# Routes Catalogue (KIC). Lecture et écriture partagent les mêmes chemins :
+# la séparation public/protégé se fait par MÉTHODE HTTP (konghq.com/methods).
+
+# GET /api/v1/products + /api/v1/categories : PUBLIC (rate-limiting seul).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: catalogue-read-public
+  namespace: applications
+  annotations:
+    konghq.com/plugins: rate-limiting
+    konghq.com/strip-path: "false"
+    konghq.com/methods: "GET"
+spec:
+  ingressClassName: kong
+  rules:
+    - http:
+        paths:
+          - path: /api/v1/products
+            pathType: Prefix
+            backend:
+              service:
+                name: catalogue
+                port:
+                  number: 3002
+          - path: /api/v1/categories
+            pathType: Prefix
+            backend:
+              service:
+                name: catalogue
+                port:
+                  number: 3002
+---
+# POST/PUT/PATCH/DELETE sur les mêmes chemins : PROTÉGÉ (jwt + rate-limiting).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: catalogue-write-protected
+  namespace: applications
+  annotations:
+    konghq.com/plugins: jwt,rate-limiting
+    konghq.com/strip-path: "false"
+    konghq.com/methods: "POST,PUT,PATCH,DELETE"
+spec:
+  ingressClassName: kong
+  rules:
+    - http:
+        paths:
+          - path: /api/v1/products
+            pathType: Prefix
+            backend:
+              service:
+                name: catalogue
+                port:
+                  number: 3002
+          - path: /api/v1/categories
+            pathType: Prefix
+            backend:
+              service:
+                name: catalogue
+                port:
+                  number: 3002

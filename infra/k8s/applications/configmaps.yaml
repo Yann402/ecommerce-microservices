@@ -1,0 +1,22 @@
+# Configuration NON sensible des services (ports, durée de jeton, URL Mongo).
+# Les valeurs contenant un mot de passe vont dans des Secrets, pas ici.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iam-config
+  namespace: applications
+data:
+  PORT: "3001"
+  JWT_EXPIRES_IN: "1h"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalogue-config
+  namespace: applications
+data:
+  PORT: "3002"
+  # MongoDB local sans authentification -> pas de secret dans l'URL, donc
+  # légitime en ConfigMap. L'hôte est le Service headless du cluster.
+  MONGODB_URI: "mongodb://mongodb.infra-middlewares.svc.cluster.local:27017/catalogue"
