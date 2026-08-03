@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: catalogue
-          image: catalogue-service:latest
+          image: catalogue-service:v2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3002

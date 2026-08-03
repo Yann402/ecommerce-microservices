@@ -18,7 +18,7 @@ spec:
     spec:
       initContainers:
         - name: prisma-db-push
-          image: iam-service:v2
+          image: iam-service:v3
           imagePullPolicy: IfNotPresent
           command: ["npx", "prisma", "db", "push", "--skip-generate"]
           env:
@@ -29,7 +29,7 @@ spec:
                   key: DATABASE_URL
       containers:
         - name: iam
-          image: iam-service:v2
+          image: iam-service:v3
           imagePullPolicy: IfNotPresent   # utilise l'image buildée en local
           ports:
             - containerPort: 3001
