@@ -5,6 +5,7 @@ dist/
 build/
 # Env
 .env
+**/.env
 *.local
 # Prisma
 services/*/prisma/*.db
@@ -18,3 +19,15 @@ npm-debug.log*
 # Tests
 coverage/
 request-postman-test/
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+# Build
+dist/
+build/
+*.tsbuildinfo

@@ -1,0 +1,41 @@
+// Base PROPRE au service Commandes (Database per Service).
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StatutCommande {
+  EN_ATTENTE
+  CONFIRMEE
+  ANNULEE
+}
+
+model Order {
+  id            String         @id @default(uuid())
+  userId        String         @map("user_id")
+  statut        StatutCommande @default(EN_ATTENTE)
+  montantTotal  Decimal        @map("montant_total") @db.Decimal(10, 2)
+  motifAnnulation String?      @map("motif_annulation")
+  dateCreation  DateTime       @default(now()) @map("date_creation")
+  dateMiseAJour DateTime       @updatedAt @map("date_mise_a_jour")
+  lignes        OrderLine[]
+
+  @@map("orders")
+}
+
+model OrderLine {
+  id           String  @id @default(uuid())
+  orderId      String  @map("order_id")
+  order        Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String  @map("product_id")
+  nomProduit   String  @map("nom_produit")   // figé à l'achat
+  prixUnitaire Decimal @map("prix_unitaire") @db.Decimal(10, 2) // figé à l'achat
+  quantite     Int
+
+  @@map("order_lines")
+}

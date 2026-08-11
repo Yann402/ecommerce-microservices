@@ -1,0 +1,74 @@
+# RabbitMQ — broker de la Saga (StatefulSet in-cluster). PVC dédié pour la
+# DURABILITÉ des messages (les queues sont déclarées durables côté services).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-credentials
+  namespace: infra-middlewares
+type: Opaque
+stringData:
+  RABBITMQ_DEFAULT_USER: ecom
+  RABBITMQ_DEFAULT_PASS: ecom_dev_password
+---
+# Service headless : identité DNS stable (rabbitmq.infra-middlewares...).
+# Expose 5672 (AMQP, utilisé par les services) et 15672 (console d'admin,
+# accessible via kubectl port-forward).
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: infra-middlewares
+spec:
+  clusterIP: None
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: management
+      port: 15672
+      targetPort: 15672
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: infra-middlewares
+spec:
+  serviceName: rabbitmq
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.13-management-alpine
+          envFrom:
+            - secretRef:
+                name: rabbitmq-credentials
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

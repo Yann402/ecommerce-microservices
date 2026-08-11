@@ -1,29 +1,29 @@
-# Service Catalogue : Deployment + Service (ClusterIP).
-# MISE À JOUR Saga : image v3 (contient le consumer RabbitMQ) + RABBITMQ_URL.
+# Service Panier : Deployment + Service (ClusterIP). Pas d'initContainer
+# (Redis n'a pas de schéma à appliquer).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: catalogue
+  name: panier
   namespace: applications
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: catalogue
+      app: panier
   template:
     metadata:
       labels:
-        app: catalogue
+        app: panier
     spec:
       containers:
-        - name: catalogue
-          image: catalogue-service:v4
+        - name: panier
+          image: panier-service:v2
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 3002
+            - containerPort: 3003
           envFrom:
             - configMapRef:
-                name: catalogue-config
+                name: panier-config
           env:
             - name: JWT_SECRET
               valueFrom:
@@ -38,13 +38,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /api/v1/health
-              port: 3002
+              port: 3003
             initialDelaySeconds: 20
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /api/v1/health
-              port: 3002
+              port: 3003
             initialDelaySeconds: 10
             periodSeconds: 10
           resources:
@@ -57,12 +57,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: catalogue
+  name: panier
   namespace: applications
 spec:
   selector:
-    app: catalogue
+    app: panier
   ports:
     - name: http
-      port: 3002
-      targetPort: 3002
+      port: 3003
+      targetPort: 3003

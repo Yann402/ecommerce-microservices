@@ -76,6 +76,14 @@ export class ProductsService {
     return { id, supprime: true };
   }
 
+  // Ré-incrémente le stock : utilisé par la COMPENSATION de la Saga (rollback
+  // d'une ligne quand une autre ligne de la même commande est en rupture).
+  async incrementerStock(id: string, quantite: number): Promise<void> {
+    await this.productModel
+      .findOneAndUpdate({ _id: id }, { $inc: { stock: quantite } })
+      .exec();
+  }
+
   // ---------- Décrément atomique conditionnel (Bug 1) ----------
 
   // Utilisé plus tard par la Saga (le Catalogue consommera CommandeCréée au

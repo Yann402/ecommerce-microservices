@@ -17,6 +17,35 @@ metadata:
   namespace: applications
 data:
   PORT: "3002"
-  # MongoDB local sans authentification -> pas de secret dans l'URL, donc
-  # légitime en ConfigMap. L'hôte est le Service headless du cluster.
   MONGODB_URI: "mongodb://mongodb.infra-middlewares.svc.cluster.local:27017/catalogue"
+---
+# Panier : Redis + appel DIRECT au Catalogue (DNS interne, jamais via Kong).
+# RABBITMQ_URL (avec mot de passe) est dans le Secret rabbitmq-url.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: panier-config
+  namespace: applications
+data:
+  PORT: "3003"
+  REDIS_URL: "redis://redis.infra-middlewares.svc.cluster.local:6379"
+  CATALOGUE_URL: "http://catalogue.applications.svc.cluster.local:3002"
+  CART_TTL_SECONDS: "604800"
+  CB_TIMEOUT_MS: "3000"
+  CB_ERROR_THRESHOLD_PCT: "50"
+  CB_RESET_TIMEOUT_MS: "10000"
+---
+# Commandes : appel DIRECT au Panier (DNS interne). DATABASE_URL et RABBITMQ_URL
+# (sensibles) sont dans des Secrets.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: commandes-config
+  namespace: applications
+data:
+  PORT: "3004"
+  PANIER_URL: "http://panier.applications.svc.cluster.local:3003"
+  PAYMENT_MOCK_MODE: "always_success"
+  CB_TIMEOUT_MS: "3000"
+  CB_ERROR_THRESHOLD_PCT: "50"
+  CB_RESET_TIMEOUT_MS: "10000"

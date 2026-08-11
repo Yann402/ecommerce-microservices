@@ -5,6 +5,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { ProductsModule } from './modules/products/products.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { HealthModule } from './modules/health/health.module';
+import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
+import { SagaModule } from './modules/saga/saga.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { HealthModule } from './modules/health/health.module';
     ProductsModule,
     CategoriesModule,
     HealthModule,
+    RabbitMQModule,
+    SagaModule,
   ],
 })
 export class AppModule {}
