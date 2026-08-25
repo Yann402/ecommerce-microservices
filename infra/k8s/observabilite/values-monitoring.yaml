@@ -1,0 +1,29 @@
+# Réglages allégés de kube-prometheus-stack pour un cluster local de démonstration.
+# Objectif : métriques fonctionnelles sans saturer la RAM.
+
+# Alertmanager : inutile pour une démo (pas d'alerting à configurer). Désactivé
+# pour économiser un composant entier.
+alertmanager:
+  enabled: false
+
+# Grafana : mot de passe admin explicite (dev). L'interface d'affichage.
+grafana:
+  adminPassword: admin_dev_password
+
+# Prometheus : rétention courte (2 jours suffisent pour une démo) et ressources
+# bornées pour ne pas monopoliser la mémoire.
+prometheus:
+  prometheusSpec:
+    retention: 2d
+    # Surveiller les ServiceMonitor de TOUS les namespaces, pas seulement d'observabilite.
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        memory: 1Gi
+
+# Les petits collecteurs (node-exporter, kube-state-metrics) restent aux valeurs
+# par défaut : ils sont légers et fournissent les métriques CPU/RAM/pods.

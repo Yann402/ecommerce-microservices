@@ -1,0 +1,14 @@
+# Version minimale du plugin : uniquement les champs essentiels, pour maximiser
+# la compatibilité avec Kong 3.9. On ajoutera la propagation ensuite si besoin.
+apiVersion: configuration.konghq.com/v1
+kind: KongClusterPlugin
+metadata:
+  name: opentelemetry-tracing
+  labels:
+    global: "true"
+  annotations:
+    kubernetes.io/ingress.class: kong
+plugin: opentelemetry
+config:
+  endpoint: "http://jaeger.observabilite.svc.cluster.local:4318/v1/traces"
+  sampling_rate: 1.0

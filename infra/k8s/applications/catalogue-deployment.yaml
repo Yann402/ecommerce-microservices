@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: catalogue
-          image: catalogue-service:v4
+          image: catalogue-service:v7
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3002
@@ -35,6 +35,10 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-url
                   key: RABBITMQ_URL
+            - name: OTEL_SERVICE_NAME
+              value: catalogue
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger.observabilite.svc.cluster.local:4318
           livenessProbe:
             httpGet:
               path: /api/v1/health
@@ -59,6 +63,8 @@ kind: Service
 metadata:
   name: catalogue
   namespace: applications
+  labels:
+    app: catalogue
 spec:
   selector:
     app: catalogue

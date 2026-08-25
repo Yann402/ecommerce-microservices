@@ -1,0 +1,9 @@
+# Active le moteur de traçage de Kong (chart "ingress" de Kong).
+# Le plugin opentelemetry définit OÙ envoyer les traces ; ces variables disent
+# à Kong d'en GÉNÉRER. Sans elles, le plugin n'a rien à exporter.
+gateway:
+  env:
+    # Génère des spans pour toutes les opérations (routage, plugins, upstream).
+    tracing_instrumentations: all
+    # Trace 100% des requêtes (démo). En production : échantillonner (ex. 0.01).
+    tracing_sampling_rate: "1.0"

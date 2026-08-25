@@ -1,0 +1,22 @@
+# Dit à Prometheus (kube-prometheus-stack) d'aller lire /api/v1/metrics sur les
+# quatre services. Le label "release: monitoring" est indispensable : c'est lui
+# que l'opérateur Prometheus sélectionne pour prendre ce ServiceMonitor en compte.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: applications-metrics
+  namespace: applications
+  labels:
+    release: monitoring
+spec:
+  namespaceSelector:
+    matchNames: [applications]
+  selector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: [iam, catalogue, panier, commandes]
+  endpoints:
+    - port: http            # le port nommé "http" de tes Services
+      path: /api/v1/metrics # /metrics + préfixe global api/v1
+      interval: 15s

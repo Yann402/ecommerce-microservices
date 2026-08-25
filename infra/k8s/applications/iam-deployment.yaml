@@ -18,7 +18,7 @@ spec:
     spec:
       initContainers:
         - name: prisma-db-push
-          image: iam-service:v3
+          image: iam-service:v5
           imagePullPolicy: IfNotPresent
           command: ["npx", "prisma", "db", "push", "--skip-generate"]
           env:
@@ -29,8 +29,8 @@ spec:
                   key: DATABASE_URL
       containers:
         - name: iam
-          image: iam-service:v3
-          imagePullPolicy: IfNotPresent   # utilise l'image buildée en local
+          image: iam-service:v5
+          imagePullPolicy: IfNotPresent # utilise l'image buildée en local
           ports:
             - containerPort: 3001
           envFrom:
@@ -47,6 +47,10 @@ spec:
                 secretKeyRef:
                   name: iam-db
                   key: DATABASE_URL
+            - name: OTEL_SERVICE_NAME
+              value: iam
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger.observabilite.svc.cluster.local:4318
           livenessProbe:
             httpGet:
               path: /api/v1/health
@@ -71,6 +75,8 @@ kind: Service
 metadata:
   name: iam
   namespace: applications
+  labels:
+    app: iam
 spec:
   selector:
     app: iam

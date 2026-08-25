@@ -1,0 +1,57 @@
+# Jaeger "all-in-one" : collecteur + interface + stockage en mémoire, dans un
+# seul conteneur. Idéal pour un cluster local de démonstration (léger, sans
+# base externe). Le stockage est en mémoire : les traces sont perdues au
+# redémarrage du pod — acceptable pour une démo, à remplacer par un stockage
+# durable sur EKS.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: observabilite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+        - name: jaeger
+          # Ajuste le tag si cette version n'est pas disponible (ex: un tag 1.x récent).
+          image: jaegertracing/all-in-one:1.62.0
+          env:
+            - name: COLLECTOR_OTLP_ENABLED
+              value: "true"          # active la réception au format OTLP
+          ports:
+            - containerPort: 16686   # interface web
+            - containerPort: 4317    # OTLP gRPC
+            - containerPort: 4318    # OTLP HTTP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+# Service unique exposant l'interface (16686) et les points de réception OTLP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: observabilite
+spec:
+  selector:
+    app: jaeger
+  ports:
+    - name: ui
+      port: 16686
+      targetPort: 16686
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318

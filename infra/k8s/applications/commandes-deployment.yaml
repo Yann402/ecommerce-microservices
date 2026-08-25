@@ -41,7 +41,7 @@ spec:
                   name: commandes-db
                   key: PGPASSWORD
         - name: prisma-db-push
-          image: commandes-service:v1
+          image: commandes-service:v4
           imagePullPolicy: IfNotPresent
           command: ["npx", "prisma", "db", "push", "--skip-generate"]
           env:
@@ -52,7 +52,7 @@ spec:
                   key: DATABASE_URL
       containers:
         - name: commandes
-          image: commandes-service:v1
+          image: commandes-service:v4
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3004
@@ -75,6 +75,10 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-url
                   key: RABBITMQ_URL
+            - name: OTEL_SERVICE_NAME
+              value: commandes
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger.observabilite.svc.cluster.local:4318
           livenessProbe:
             httpGet:
               path: /api/v1/health
@@ -99,6 +103,8 @@ kind: Service
 metadata:
   name: commandes
   namespace: applications
+  labels:
+    app: commandes
 spec:
   selector:
     app: commandes

@@ -1,11 +1,12 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
-import { RedisModule } from './redis/redis.module';
-import { CartModule } from './modules/cart/cart.module';
-import { HealthModule } from './modules/health/health.module';
-import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
-import { SagaModule } from './modules/saga/saga.module';
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { JwtModule } from "@nestjs/jwt";
+import { RedisModule } from "./redis/redis.module";
+import { CartModule } from "./modules/cart/cart.module";
+import { HealthModule } from "./modules/health/health.module";
+import { RabbitMQModule } from "./rabbitmq/rabbitmq.module";
+import { SagaModule } from "./modules/saga/saga.module";
+import { MetricsModule } from "./observability/metrics.module";
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SagaModule } from './modules/saga/saga.module';
     HealthModule,
     RabbitMQModule,
     SagaModule,
+    MetricsModule,
   ],
 })
 export class AppModule {}

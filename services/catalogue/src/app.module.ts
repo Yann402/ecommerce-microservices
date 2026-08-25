@@ -1,12 +1,13 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
-import { JwtModule } from '@nestjs/jwt';
-import { ProductsModule } from './modules/products/products.module';
-import { CategoriesModule } from './modules/categories/categories.module';
-import { HealthModule } from './modules/health/health.module';
-import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
-import { SagaModule } from './modules/saga/saga.module';
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { MongooseModule } from "@nestjs/mongoose";
+import { JwtModule } from "@nestjs/jwt";
+import { ProductsModule } from "./modules/products/products.module";
+import { CategoriesModule } from "./modules/categories/categories.module";
+import { HealthModule } from "./modules/health/health.module";
+import { RabbitMQModule } from "./rabbitmq/rabbitmq.module";
+import { SagaModule } from "./modules/saga/saga.module";
+import { MetricsModule } from "./observability/metrics.module";
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { SagaModule } from './modules/saga/saga.module';
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('MONGODB_URI'),
+        uri: config.get<string>("MONGODB_URI"),
       }),
     }),
 
@@ -31,6 +32,7 @@ import { SagaModule } from './modules/saga/saga.module';
     HealthModule,
     RabbitMQModule,
     SagaModule,
+    MetricsModule,
   ],
 })
 export class AppModule {}

@@ -23,8 +23,8 @@ jobs:
       - name: Installer Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: services/iam/package-lock.json
 
       - name: Installer les dépendances
@@ -48,27 +48,25 @@ jobs:
 
   # ---- Build & push de l'image vers ECR (main uniquement) ----
   build-and-push:
-    name: Build & Push ECR — IAM
+    name: Build & Push ECR - IAM
     needs: quality
     if: github.ref == 'refs/heads/main' && vars.DEPLOY_ECR == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Configurer les identifiants AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: eu-west-3
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-
-      - name: Se connecter à Amazon ECR
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Se connecter a Amazon ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
-
       - name: Build & push de l'image IAM
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
-          REPOSITORY: ecommerce/iam-service
+          REPOSITORY: ecommerce/iam
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -t $REGISTRY/$REPOSITORY:latest services/iam

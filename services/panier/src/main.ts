@@ -1,11 +1,12 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AppModule } from './app.module';
+import "./observability/tracing";
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix("api/v1");
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -15,7 +16,7 @@ async function bootstrap() {
     }),
   );
   const config = app.get(ConfigService);
-  const port = config.get<number>('PORT') ?? 3003;
+  const port = config.get<number>("PORT") ?? 3003;
   await app.listen(port);
 }
 bootstrap();
