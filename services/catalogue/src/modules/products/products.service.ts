@@ -42,9 +42,7 @@ export class ProductsService {
 
   // Détail d'un produit actif (F-2.2.b). 404 si absent/soft-deleté.
   async trouverParId(id: string) {
-    const produit = await this.productModel
-      .findOne({ _id: id, actif: true })
-      .exec();
+    const produit = await this.productModel.findOne({ _id: id, actif: true }).exec();
     if (!produit) throw new NotFoundException(`Produit ${id} introuvable.`);
     return produit;
   }
@@ -79,9 +77,7 @@ export class ProductsService {
   // Ré-incrémente le stock : utilisé par la COMPENSATION de la Saga (rollback
   // d'une ligne quand une autre ligne de la même commande est en rupture).
   async incrementerStock(id: string, quantite: number): Promise<void> {
-    await this.productModel
-      .findOneAndUpdate({ _id: id }, { $inc: { stock: quantite } })
-      .exec();
+    await this.productModel.findOneAndUpdate({ _id: id }, { $inc: { stock: quantite } }).exec();
   }
 
   // ---------- Décrément atomique conditionnel (Bug 1) ----------
@@ -91,10 +87,7 @@ export class ProductsService {
   // condition « stock >= quantite » et le décrément sont évalués ensemble,
   // empêchant deux commandes concurrentes de faire passer le stock en négatif.
   // Retourne false si le stock est insuffisant -> compensation Saga.
-  async decrementerStockConditionnel(
-    id: string,
-    quantite: number,
-  ): Promise<boolean> {
+  async decrementerStockConditionnel(id: string, quantite: number): Promise<boolean> {
     const res = await this.productModel
       .findOneAndUpdate(
         { _id: id, actif: true, stock: { $gte: quantite } },

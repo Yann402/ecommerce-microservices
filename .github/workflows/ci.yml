@@ -1,8 +1,7 @@
-# Pipeline CI/CD — Sprint 1 (US 1.1)
-# Déclenchée à chaque push/PR. Étapes : install, lint, test, build, puis
-# build+push de l'image Docker vers Amazon ECR (uniquement sur la branche main).
+# Pipeline CI/CD — build, test et push des 4 microservices vers Amazon ECR.
+# Déclenchée à chaque push/PR. Le push vers ECR n'a lieu que sur main,
+# et seulement si la variable DEPLOY_ECR vaut 'true'.
 name: CI/CD
-
 on:
   push:
     branches: [main, develop]
@@ -10,48 +9,49 @@ on:
     branches: [main, develop]
 
 jobs:
-  # ---- Qualité et tests (par service) ----
+  # ---- Qualité et tests (matricé sur les 4 services) ----
   quality:
-    name: Lint & Tests — IAM
+    name: Lint & Tests — ${{ matrix.service }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [iam, catalogue, panier, commandes]
+      fail-fast: false
     defaults:
       run:
-        working-directory: services/iam
+        working-directory: services/${{ matrix.service }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Installer Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: services/iam/package-lock.json
-
+          cache-dependency-path: services/${{ matrix.service }}/package-lock.json
       - name: Installer les dépendances
         run: npm ci
-
-      - name: Générer le client Prisma
-        run: npx prisma generate
-
+      - name: Générer le client Prisma (si applicable)
+        run: |
+          if [ -f prisma/schema.prisma ]; then
+            npx prisma generate
+          else
+            echo "Pas de schéma Prisma pour ${{ matrix.service }}, étape ignorée."
+          fi
       - name: Lint (ESLint + Prettier)
         run: npm run lint
-
       - name: Tests unitaires
         run: npm test
 
-      - name: Analyse qualité (SonarQube)
-        # Intégration SonarQube Community (F-1.1.d) — activée quand le serveur Sonar est configuré.
-        if: ${{ env.SONAR_TOKEN != '' }}
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: echo "Analyse SonarQube à brancher sur le serveur Sonar de l'équipe."
-
-  # ---- Build & push de l'image vers ECR (main uniquement) ----
+  # ---- Build & push des images vers ECR (main uniquement) ----
   build-and-push:
-    name: Build & Push ECR - IAM
+    name: Build & Push ECR — ${{ matrix.service }}
     needs: quality
     if: github.ref == 'refs/heads/main' && vars.DEPLOY_ECR == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [iam, catalogue, panier, commandes]
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
       - name: Configurer les identifiants AWS
@@ -60,15 +60,15 @@ jobs:
           aws-region: eu-west-3
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      - name: Se connecter a Amazon ECR
+      - name: Se connecter à Amazon ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - name: Build & push de l'image IAM
+      - name: Build & push de l'image ${{ matrix.service }}
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
-          REPOSITORY: ecommerce/iam
+          REPOSITORY: ecommerce/${{ matrix.service }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -t $REGISTRY/$REPOSITORY:latest services/iam
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -t $REGISTRY/$REPOSITORY:latest services/${{ matrix.service }}
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
           docker push $REGISTRY/$REPOSITORY:latest

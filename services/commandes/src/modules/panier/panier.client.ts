@@ -3,9 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import * as CircuitBreaker from 'opossum';
 
 export interface PanierItem {
-  productId: string; nomProduit: string; prixUnitaire: string; quantite: number;
+  productId: string;
+  nomProduit: string;
+  prixUnitaire: string;
+  quantite: number;
 }
-export interface Panier { items: PanierItem[]; total: string; }
+export interface Panier {
+  items: PanierItem[];
+  total: string;
+}
 
 // Appel SYNCHRONE Commandes -> Panier, protégé par Circuit Breaker (Bug 2).
 @Injectable()

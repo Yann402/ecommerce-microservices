@@ -29,9 +29,7 @@ export class CartService {
   // Sauvegarde avec (ré)armement du TTL : chaque action prolonge la vie du panier.
   private async saveCart(userId: string, cart: Cart): Promise<void> {
     cart.dateMiseAJour = new Date().toISOString();
-    await this.redis
-      .getClient()
-      .set(this.key(userId), JSON.stringify(cart), 'EX', this.ttl);
+    await this.redis.getClient().set(this.key(userId), JSON.stringify(cart), 'EX', this.ttl);
   }
 
   // Total calculé en CENTIMES entiers pour éviter les erreurs de flottant,

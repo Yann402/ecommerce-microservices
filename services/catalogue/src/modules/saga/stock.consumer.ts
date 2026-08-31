@@ -2,7 +2,10 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 import { ProductsService } from '../products/products.service';
 
-interface LigneCommande { productId: string; quantite: number; }
+interface LigneCommande {
+  productId: string;
+  quantite: number;
+}
 
 // Réaction du Catalogue à l'événement CommandeCréée (Saga chorégraphiée).
 // Décrémente atomiquement (Bug 1) ; si une ligne est en rupture, COMPENSE les
@@ -42,7 +45,11 @@ export class StockConsumer implements OnModuleInit {
         }
         this.logger.warn(`Commande ${orderId} : rupture sur ${l.productId} -> compensation`);
         // On repropage les headers (userId + traceId) — continuité du contexte (Bug 3).
-        await this.rabbitmq.publish('stock.insuffisant', { orderId, productId: l.productId }, headers);
+        await this.rabbitmq.publish(
+          'stock.insuffisant',
+          { orderId, productId: l.productId },
+          headers,
+        );
         return;
       }
     }

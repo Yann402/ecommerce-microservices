@@ -11,8 +11,14 @@ describe('CartService', () => {
 
   const client = {
     get: jest.fn((k: string) => Promise.resolve(store[k] ?? null)),
-    set: jest.fn((k: string, v: string) => { store[k] = v; return Promise.resolve('OK'); }),
-    del: jest.fn((k: string) => { delete store[k]; return Promise.resolve(1); }),
+    set: jest.fn((k: string, v: string) => {
+      store[k] = v;
+      return Promise.resolve('OK');
+    }),
+    del: jest.fn((k: string) => {
+      delete store[k];
+      return Promise.resolve(1);
+    }),
   };
   const redis = { getClient: () => client };
   const catalogue = { getProduct: jest.fn() };

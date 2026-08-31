@@ -1,10 +1,6 @@
-import {
-  Injectable,
-  Logger,
-  ServiceUnavailableException,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import * as CircuitBreaker from "opossum";
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as CircuitBreaker from 'opossum';
 
 export interface CatalogueProduct {
   id: string;
@@ -24,26 +20,19 @@ export class CatalogueClient {
   private readonly breaker: CircuitBreaker<[string], CatalogueProduct | null>;
 
   constructor(private readonly config: ConfigService) {
-    this.baseUrl =
-      this.config.get<string>("CATALOGUE_URL") ?? "http://localhost:3002";
+    this.baseUrl = this.config.get<string>('CATALOGUE_URL') ?? 'http://localhost:3002';
 
     this.breaker = new CircuitBreaker((id: string) => this.fetchProduct(id), {
-      timeout: Number(this.config.get("CB_TIMEOUT_MS") ?? 3000),
-      errorThresholdPercentage: Number(
-        this.config.get("CB_ERROR_THRESHOLD_PCT") ?? 50,
-      ),
-      resetTimeout: Number(this.config.get("CB_RESET_TIMEOUT_MS") ?? 10000),
+      timeout: Number(this.config.get('CB_TIMEOUT_MS') ?? 3000),
+      errorThresholdPercentage: Number(this.config.get('CB_ERROR_THRESHOLD_PCT') ?? 50),
+      resetTimeout: Number(this.config.get('CB_RESET_TIMEOUT_MS') ?? 10000),
     });
 
-    this.breaker.on("open", () =>
-      this.logger.warn("Circuit Catalogue OUVERT — appels court-circuités"),
+    this.breaker.on('open', () =>
+      this.logger.warn('Circuit Catalogue OUVERT — appels court-circuités'),
     );
-    this.breaker.on("halfOpen", () =>
-      this.logger.log("Circuit Catalogue en test (half-open)"),
-    );
-    this.breaker.on("close", () =>
-      this.logger.log("Circuit Catalogue refermé"),
-    );
+    this.breaker.on('halfOpen', () => this.logger.log('Circuit Catalogue en test (half-open)'));
+    this.breaker.on('close', () => this.logger.log('Circuit Catalogue refermé'));
   }
 
   // Appel HTTP brut. 404 -> null (réponse valide). Autre erreur -> throw (compte
@@ -63,7 +52,7 @@ export class CatalogueClient {
       // Circuit ouvert, timeout ou erreur réseau -> échec rapide (503).
       this.logger.warn(`Appel Catalogue en échec : ${(err as Error).message}`);
       throw new ServiceUnavailableException(
-        "Le service Catalogue est momentanément indisponible. Réessayez plus tard.",
+        'Le service Catalogue est momentanément indisponible. Réessayez plus tard.',
       );
     }
   }

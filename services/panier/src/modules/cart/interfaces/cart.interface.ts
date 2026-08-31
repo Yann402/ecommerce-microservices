@@ -3,8 +3,8 @@
 
 export interface CartItem {
   productId: string;
-  nomProduit: string;      // capturé depuis le Catalogue à l'ajout (snapshot)
-  prixUnitaire: string;    // string : cohérent avec le Decimal128 du Catalogue
+  nomProduit: string; // capturé depuis le Catalogue à l'ajout (snapshot)
+  prixUnitaire: string; // string : cohérent avec le Decimal128 du Catalogue
   quantite: number;
   disponibiliteAConfirmer?: boolean; // true si stock jugé insuffisant à l'ajout
 }

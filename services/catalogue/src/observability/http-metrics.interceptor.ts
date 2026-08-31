@@ -1,6 +1,4 @@
-import {
-  CallHandler, ExecutionContext, Injectable, NestInterceptor,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Histogram } from 'prom-client';
 import { Observable } from 'rxjs';
@@ -26,9 +24,7 @@ export class HttpMetricsInterceptor implements NestInterceptor {
     return next.handle().pipe(
       finalize(() => {
         const duration = (Date.now() - start) / 1000;
-        this.histogram
-          .labels(req.method, route, String(res.statusCode))
-          .observe(duration);
+        this.histogram.labels(req.method, route, String(res.statusCode)).observe(duration);
       }),
     );
   }

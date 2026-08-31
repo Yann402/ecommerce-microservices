@@ -50,24 +50,18 @@ describe('ProductsService', () => {
 
   it('trouverParId : lève 404 quand le produit est absent/soft-deleté', async () => {
     model.findOne.mockReturnValue(execChain(null));
-    await expect(service.trouverParId('inexistant')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(service.trouverParId('inexistant')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('décrément atomique : true quand le stock est suffisant', async () => {
     model.findOneAndUpdate.mockReturnValue(execChain({ _id: 'p1', stock: 5 }));
-    await expect(
-      service.decrementerStockConditionnel('p1', 3),
-    ).resolves.toBe(true);
+    await expect(service.decrementerStockConditionnel('p1', 3)).resolves.toBe(true);
   });
 
   it('décrément atomique : false quand le stock est insuffisant (Bug 1)', async () => {
     // La condition stock>=quantite n'est pas satisfaite -> findOneAndUpdate
     // ne modifie rien et renvoie null -> pas de stock négatif.
     model.findOneAndUpdate.mockReturnValue(execChain(null));
-    await expect(
-      service.decrementerStockConditionnel('p1', 999),
-    ).resolves.toBe(false);
+    await expect(service.decrementerStockConditionnel('p1', 999)).resolves.toBe(false);
   });
 });

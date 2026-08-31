@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import {
-  PrometheusModule, makeHistogramProvider,
-} from '@willsoto/nestjs-prometheus';
+import { PrometheusModule, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
 import { HttpMetricsInterceptor } from './http-metrics.interceptor';
 
 // Expose GET /metrics (métriques de base du process + histogramme HTTP) et

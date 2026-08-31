@@ -2,12 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
 // OpenTelemetry : propagation du contexte de trace à travers RabbitMQ (niveau 2).
-import {
-  context,
-  propagation,
-  trace,
-  SpanKind,
-} from '@opentelemetry/api';
+import { context, propagation, trace, SpanKind } from '@opentelemetry/api';
 
 type Handler = (content: any, headers: any, routingKey: string) => Promise<void>;
 
@@ -52,12 +47,11 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       propagation.inject(context.active(), headers);
     });
 
-    this.channel.publish(
-      this.exchange,
-      routingKey,
-      Buffer.from(JSON.stringify(message)),
-      { persistent: true, contentType: 'application/json', headers },
-    );
+    this.channel.publish(this.exchange, routingKey, Buffer.from(JSON.stringify(message)), {
+      persistent: true,
+      contentType: 'application/json',
+      headers,
+    });
 
     span.end();
   }

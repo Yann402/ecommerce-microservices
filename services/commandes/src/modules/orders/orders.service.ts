@@ -1,6 +1,11 @@
 import {
-  BadRequestException, HttpException, HttpStatus, Injectable, Logger,
-  NotFoundException, OnModuleInit,
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -68,7 +73,10 @@ export class OrdersService implements OnModuleInit {
     // Publication ASYNCHRONE. Bug 3 : userId + traceId dans les headers.
     await this.rabbitmq.publish(
       'commande.creee',
-      { orderId: order.id, lignes: order.lignes.map((l) => ({ productId: l.productId, quantite: l.quantite })) },
+      {
+        orderId: order.id,
+        lignes: order.lignes.map((l) => ({ productId: l.productId, quantite: l.quantite })),
+      },
       { userId, traceId },
     );
 

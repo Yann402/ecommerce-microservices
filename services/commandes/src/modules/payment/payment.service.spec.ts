@@ -1,8 +1,7 @@
 import { PaymentService } from './payment.service';
 import { ConfigService } from '@nestjs/config';
 
-const make = (mode: string) =>
-  new PaymentService({ get: () => mode } as unknown as ConfigService);
+const make = (mode: string) => new PaymentService({ get: () => mode } as unknown as ConfigService);
 
 describe('PaymentService (mock configurable)', () => {
   it('always_success : paiement accepté', async () => {
